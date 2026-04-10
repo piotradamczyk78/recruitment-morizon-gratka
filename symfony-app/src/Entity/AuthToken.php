@@ -4,9 +4,10 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
+use App\Repository\AuthTokenRepository;
 use Doctrine\ORM\Mapping as ORM;
 
-#[ORM\Entity]
+#[ORM\Entity(repositoryClass: AuthTokenRepository::class)]
 #[ORM\Table(name: 'auth_tokens')]
 class AuthToken
 {
