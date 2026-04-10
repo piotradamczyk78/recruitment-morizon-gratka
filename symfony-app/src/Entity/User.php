@@ -134,11 +134,7 @@ class User
 
     public function removePhoto(Photo $photo): self
     {
-        if ($this->photos->removeElement($photo)) {
-            if ($photo->getUser() === $this) {
-                $photo->setUser(null);
-            }
-        }
+        $this->photos->removeElement($photo);
 
         return $this;
     }
