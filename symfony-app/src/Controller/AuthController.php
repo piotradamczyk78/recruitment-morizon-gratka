@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
-use Doctrine\DBAL\Connection;
+use App\Repository\AuthTokenRepository;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -12,24 +12,24 @@ use Symfony\Component\Routing\Annotation\Route;
 
 class AuthController extends AbstractController
 {
+    public function __construct(
+        private AuthTokenRepository $authTokenRepository,
+    ) {}
+
     #[Route('/auth/login', name: 'auth_login', methods: ['POST'])]
-    public function login(Connection $connection, Request $request): Response
+    public function login(Request $request): Response
     {
         $token = $request->request->get('token', '');
         $username = $request->request->get('username', '');
 
-        $sql = "SELECT u.* FROM users u
-            INNER JOIN auth_tokens t ON t.user_id = u.id
-            WHERE t.token = ? AND u.username = ?";
-        $result = $connection->executeQuery($sql, [$token, $username]);
-        $userData = $result->fetchAssociative();
+        $user = $this->authTokenRepository->findUserByTokenAndUsername($token, $username);
 
-        if (!$userData) {
+        if (!$user) {
             return new Response('Invalid credentials', 401);
         }
 
         $session = $request->getSession();
-        $session->set('user_id', $userData['id']);
+        $session->set('user_id', $user->getId());
         $session->set('username', $username);
 
         $this->addFlash('success', 'Welcome back, ' . $username . '!');
