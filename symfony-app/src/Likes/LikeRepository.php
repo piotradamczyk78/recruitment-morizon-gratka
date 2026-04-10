@@ -11,20 +11,13 @@ use Doctrine\Persistence\ManagerRegistry;
 
 final class LikeRepository extends ServiceEntityRepository implements LikeRepositoryInterface
 {
-    private ?User $user;
-
     public function __construct(ManagerRegistry $registry)
     {
         parent::__construct($registry, Like::class);
     }
 
-    public function setUser(?User $user): void
-    {
-        $this->user = $user;
-    }
-
     #[\Override]
-    public function unlikePhoto(Photo $photo): void
+    public function unlikePhoto(User $user, Photo $photo): void
     {
         $em = $this->getEntityManager();
 
@@ -33,7 +26,7 @@ final class LikeRepository extends ServiceEntityRepository implements LikeReposi
             ->from(Like::class, 'l')
             ->where('l.user = :user')
             ->andWhere('l.photo = :photo')
-            ->setParameter('user', $this->user)
+            ->setParameter('user', $user)
             ->setParameter('photo', $photo)
             ->setMaxResults(1)
             ->getQuery()
@@ -54,13 +47,13 @@ final class LikeRepository extends ServiceEntityRepository implements LikeReposi
     }
 
     #[\Override]
-    public function hasUserLikedPhoto(Photo $photo): bool
+    public function hasUserLikedPhoto(User $user, Photo $photo): bool
     {
         $likes = $this->createQueryBuilder('l')
             ->select('l.id')
             ->where('l.user = :user')
             ->andWhere('l.photo = :photo')
-            ->setParameter('user', $this->user)
+            ->setParameter('user', $user)
             ->setParameter('photo', $photo)
             ->getQuery()
             ->getArrayResult();
@@ -69,10 +62,10 @@ final class LikeRepository extends ServiceEntityRepository implements LikeReposi
     }
 
     #[\Override]
-    public function createLike(Photo $photo): Like
+    public function createLike(User $user, Photo $photo): Like
     {
         $like = new Like();
-        $like->setUser($this->user);
+        $like->setUser($user);
         $like->setPhoto($photo);
 
         $em = $this->getEntityManager();
@@ -83,9 +76,9 @@ final class LikeRepository extends ServiceEntityRepository implements LikeReposi
     }
 
     #[\Override]
-    public function getUserLikedPhotoIds(array $photos): array
+    public function getUserLikedPhotoIds(User $user, array $photos): array
     {
-        if (empty($photos) || !$this->user) {
+        if (empty($photos)) {
             return [];
         }
 
@@ -95,7 +88,7 @@ final class LikeRepository extends ServiceEntityRepository implements LikeReposi
             ->select('IDENTITY(l.photo) AS photo_id')
             ->where('l.user = :user')
             ->andWhere('l.photo IN (:photos)')
-            ->setParameter('user', $this->user)
+            ->setParameter('user', $user)
             ->setParameter('photos', $photoIds)
             ->getQuery()
             ->getSingleColumnResult();
