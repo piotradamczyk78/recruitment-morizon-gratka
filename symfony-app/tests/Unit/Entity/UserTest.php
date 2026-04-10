@@ -65,16 +65,15 @@ class UserTest extends TestCase
     }
 
     /**
-     * Bug #16: removePhoto() tries to setUser(null) which throws TypeError
-     * because Photo::$user is typed as non-nullable User.
-     * Documents current (buggy) behavior.
+     * Fix #16: removePhoto() no longer calls setUser(null).
+     * It only removes the photo from the collection.
      */
-    public function testRemovePhotoThrowsTypeErrorDueToNullableUserBug(): void
+    public function testRemovePhoto(): void
     {
         $photo = new Photo();
         $this->user->addPhoto($photo);
 
-        $this->expectException(\TypeError::class);
         $this->user->removePhoto($photo);
+        $this->assertCount(0, $this->user->getPhotos());
     }
 }

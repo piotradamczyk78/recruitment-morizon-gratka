@@ -66,18 +66,13 @@ class PhotoTest extends TestCase
     }
 
     /**
-     * Bug #16: setUser() accepts null despite property being typed as non-nullable User.
-     * Calling setUser(null) causes a TypeError at runtime.
-     * Documents current (buggy) behavior - the method signature allows null
-     * but the property type rejects it.
+     * Fix #16: setUser() now requires non-nullable User parameter,
+     * consistent with the non-nullable property and JoinColumn(nullable: false).
      */
-    public function testSetUserWithNullThrowsTypeError(): void
+    public function testSetUserRejectsNull(): void
     {
-        $user = new User();
-        $this->photo->setUser($user);
-
         $this->expectException(\TypeError::class);
-        $this->photo->setUser(null);
+        $this->photo->setUser(null); // @phpstan-ignore argument.type
     }
 
     /**
