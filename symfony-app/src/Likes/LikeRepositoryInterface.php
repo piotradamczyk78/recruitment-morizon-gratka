@@ -14,8 +14,6 @@ interface LikeRepositoryInterface
 
     public function createLike(User $user, Photo $photo): Like;
 
-    public function updatePhotoCounter(Photo $photo, int $increment): void;
-
     /**
      * @param Photo[] $photos
      * @return array<int, bool> Map of photo ID => liked status
