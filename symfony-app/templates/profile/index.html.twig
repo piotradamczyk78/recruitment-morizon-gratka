@@ -119,6 +119,58 @@
             box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
         }
         
+        .phoenix-token-section {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 12px;
+            border-left: 4px solid #e67e22;
+            margin-top: 25px;
+        }
+
+        .phoenix-token-label {
+            font-size: 0.85em;
+            color: #e67e22;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 12px;
+        }
+
+        .phoenix-token-form {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .phoenix-token-input {
+            flex: 1;
+            padding: 10px 14px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 0.95em;
+            transition: border-color 0.2s;
+        }
+
+        .phoenix-token-input:focus {
+            outline: none;
+            border-color: #e67e22;
+        }
+
+        .phoenix-token-btn {
+            padding: 10px 20px;
+            background: #e67e22;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .phoenix-token-btn:hover {
+            background: #d35400;
+        }
+
         .profile-stats {
             display: flex;
             justify-content: center;
@@ -197,6 +249,19 @@
             </div>
         {% endif %}
         
+        <div class="phoenix-token-section">
+            <div class="phoenix-token-label">Phoenix API Token</div>
+            <form method="post" action="{{ path('profile_phoenix_token') }}" class="phoenix-token-form">
+                <input type="hidden" name="_token" value="{{ csrf_token('phoenix-token') }}">
+                <input type="text"
+                       name="phoenix_api_token"
+                       class="phoenix-token-input"
+                       placeholder="Enter your Phoenix API token"
+                       value="{{ user.phoenixApiToken|default('') }}">
+                <button type="submit" class="phoenix-token-btn">Save Token</button>
+            </form>
+        </div>
+
         <div class="profile-stats">
             <div class="stat-item">
                 <div class="stat-number">{{ user.photos|length }}</div>
