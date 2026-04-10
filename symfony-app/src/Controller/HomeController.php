@@ -37,8 +37,7 @@ class HomeController extends AbstractController
             $currentUser = $em->getRepository(User::class)->find($userId);
 
             if ($currentUser) {
-                $likeRepository->setUser($currentUser);
-                $userLikes = $likeRepository->getUserLikedPhotoIds($photos);
+                $userLikes = $likeRepository->getUserLikedPhotoIds($currentUser, $photos);
             }
         }
 

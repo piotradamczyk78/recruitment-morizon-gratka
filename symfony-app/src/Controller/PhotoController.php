@@ -46,17 +46,15 @@ class PhotoController extends AbstractController
 
         $photo = $em->getRepository(Photo::class)->find($id);
 
-        $likeRepository->setUser($user);
-
         if (!$photo) {
             throw $this->createNotFoundException('Photo not found');
         }
 
-        if ($likeRepository->hasUserLikedPhoto($photo)) {
-            $likeRepository->unlikePhoto($photo);
+        if ($likeRepository->hasUserLikedPhoto($user, $photo)) {
+            $likeRepository->unlikePhoto($user, $photo);
             $this->addFlash('info', 'Photo unliked!');
         } else {
-            $likeService->execute($photo);
+            $likeService->execute($user, $photo);
             $this->addFlash('success', 'Photo liked!');
         }
 
