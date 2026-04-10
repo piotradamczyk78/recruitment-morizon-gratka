@@ -54,29 +54,27 @@ class AuthControllerTest extends WebTestCase
         $this->assertResponseStatusCodeSame(401);
     }
 
-    public function testLoginWithNonExistentUserReturns404(): void
+    public function testLoginWithNonExistentUserReturns401(): void
     {
         $user = $this->createUserWithToken('realuser', 'valid_token_123');
 
         $this->login('nonexistent', 'valid_token_123');
 
-        $this->assertResponseStatusCodeSame(404);
+        $this->assertResponseStatusCodeSame(401);
     }
 
     /**
-     * Bug #5: Token is not verified against the user - any valid token
-     * works for any username, as long as both exist in the database.
+     * Token must belong to the user - mismatched token/username is rejected.
      */
-    public function testLoginDoesNotVerifyTokenBelongsToUser(): void
+    public function testLoginRejectsMismatchedTokenAndUser(): void
     {
         $user1 = $this->createUserWithToken('user1', 'token_for_user1');
         $user2 = $this->createUserWithToken('user2', 'token_for_user2');
 
-        // Using user2's token with user1's username - should fail but doesn't
+        // Using user2's token with user1's username - must fail
         $this->login('user1', 'token_for_user2');
 
-        // Bug: this succeeds because token and user are checked independently
-        $this->assertResponseRedirects('/');
+        $this->assertResponseStatusCodeSame(401);
     }
 
     public function testLogoutClearsSessionAndRedirects(): void
