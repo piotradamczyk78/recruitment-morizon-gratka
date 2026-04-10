@@ -64,6 +64,24 @@ class UserTest extends TestCase
         $this->assertCount(1, $this->user->getPhotos());
     }
 
+    public function testPhoenixApiTokenDefaultsToNull(): void
+    {
+        $this->assertNull($this->user->getPhoenixApiToken());
+    }
+
+    public function testSetAndGetPhoenixApiToken(): void
+    {
+        $this->user->setPhoenixApiToken('abc123token');
+        $this->assertSame('abc123token', $this->user->getPhoenixApiToken());
+    }
+
+    public function testSetPhoenixApiTokenToNullClearsValue(): void
+    {
+        $this->user->setPhoenixApiToken('abc123token');
+        $this->user->setPhoenixApiToken(null);
+        $this->assertNull($this->user->getPhoenixApiToken());
+    }
+
     /**
      * Fix #16: removePhoto() no longer calls setUser(null).
      * It only removes the photo from the collection.
