@@ -24,7 +24,6 @@ class LikeService
         }
 
         $this->likeRepository->createLike($user, $photo);
-        $this->likeRepository->updatePhotoCounter($photo, 1);
         return true;
     }
 }
