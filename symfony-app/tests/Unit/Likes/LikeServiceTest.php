@@ -6,6 +6,7 @@ namespace App\Tests\Unit\Likes;
 
 use App\Entity\Photo;
 use App\Entity\User;
+use App\Likes\Like;
 use App\Likes\LikeRepositoryInterface;
 use App\Likes\LikeService;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -22,10 +23,15 @@ class LikeServiceTest extends TestCase
         $this->service = new LikeService($this->repository);
     }
 
-    public function testExecuteCreatesLikeAndUpdatesCounter(): void
+    public function testToggleLikeCreatesLikeWhenNotLiked(): void
     {
         $user = new User();
         $photo = new Photo();
+
+        $this->repository
+            ->method('hasUserLikedPhoto')
+            ->with($user, $photo)
+            ->willReturn(false);
 
         $this->repository
             ->expects($this->once())
@@ -37,16 +43,41 @@ class LikeServiceTest extends TestCase
             ->method('updatePhotoCounter')
             ->with($photo, 1);
 
-        $this->service->execute($user, $photo);
+        $result = $this->service->toggleLike($user, $photo);
+        $this->assertTrue($result);
     }
 
-    /**
-     * Fix #14: Exceptions from createLike propagate with original type and message.
-     */
-    public function testExecutePropagatesCreateLikeException(): void
+    public function testToggleLikeUnlikesWhenAlreadyLiked(): void
     {
         $user = new User();
         $photo = new Photo();
+
+        $this->repository
+            ->method('hasUserLikedPhoto')
+            ->with($user, $photo)
+            ->willReturn(true);
+
+        $this->repository
+            ->expects($this->once())
+            ->method('unlikePhoto')
+            ->with($user, $photo);
+
+        $this->repository
+            ->expects($this->never())
+            ->method('createLike');
+
+        $result = $this->service->toggleLike($user, $photo);
+        $this->assertFalse($result);
+    }
+
+    public function testToggleLikePropagatesException(): void
+    {
+        $user = new User();
+        $photo = new Photo();
+
+        $this->repository
+            ->method('hasUserLikedPhoto')
+            ->willReturn(false);
 
         $this->repository
             ->method('createLike')
@@ -55,30 +86,6 @@ class LikeServiceTest extends TestCase
         $this->expectException(\RuntimeException::class);
         $this->expectExceptionMessage('Database connection lost');
 
-        $this->service->execute($user, $photo);
-    }
-
-    /**
-     * Fix #14: Exceptions from updatePhotoCounter propagate with original type.
-     */
-    public function testExecutePropagatesCounterException(): void
-    {
-        $user = new User();
-        $photo = new Photo();
-
-        $like = $this->createMock(\App\Likes\Like::class);
-
-        $this->repository
-            ->method('createLike')
-            ->willReturn($like);
-
-        $this->repository
-            ->method('updatePhotoCounter')
-            ->willThrowException(new \TypeError('Type mismatch'));
-
-        $this->expectException(\TypeError::class);
-        $this->expectExceptionMessage('Type mismatch');
-
-        $this->service->execute($user, $photo);
+        $this->service->toggleLike($user, $photo);
     }
 }
