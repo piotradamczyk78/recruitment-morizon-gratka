@@ -18,20 +18,14 @@ class AuthController extends AbstractController
         $token = $request->request->get('token', '');
         $username = $request->request->get('username', '');
 
-        $sql = "SELECT * FROM auth_tokens WHERE token = ?";
-        $result = $connection->executeQuery($sql, [$token]);
-        $tokenData = $result->fetchAssociative();
-
-        if (!$tokenData) {
-            return new Response('Invalid token', 401);
-        }
-
-        $userSql = "SELECT * FROM users WHERE username = ?";
-        $userResult = $connection->executeQuery($userSql, [$username]);
-        $userData = $userResult->fetchAssociative();
+        $sql = "SELECT u.* FROM users u
+            INNER JOIN auth_tokens t ON t.user_id = u.id
+            WHERE t.token = ? AND u.username = ?";
+        $result = $connection->executeQuery($sql, [$token, $username]);
+        $userData = $result->fetchAssociative();
 
         if (!$userData) {
-            return new Response('User not found', 404);
+            return new Response('Invalid credentials', 401);
         }
 
         $session = $request->getSession();
