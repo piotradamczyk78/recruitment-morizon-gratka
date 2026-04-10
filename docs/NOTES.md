@@ -2,16 +2,16 @@
 
 ## Spis zadan
 
-- [Zadanie 1 - Poprawa jakosci kodu](#notatki---zadanie-1-poprawa-jakosci-kodu) | [Projekt](https://github.com/users/piotradamczyk78/projects/9)
-- [Zadanie 2 - Import zdjec z PhoenixApi](#notatki---zadanie-2-import-zdjec-z-phoenixapi) | [Projekt](https://github.com/users/piotradamczyk78/projects/10)
-- [Zadanie 3 - Filtrowanie zdjec na stronie glownej](#notatki---zadanie-3-filtrowanie-zdjec-na-stronie-glownej) | [Projekt](https://github.com/users/piotradamczyk78/projects/11)
-- [Zadanie 4 - Rate-limiting w PhoenixApi (OTP)](#notatki---zadanie-4-rate-limiting-w-phoenixapi-otp) | [Projekt](https://github.com/users/piotradamczyk78/projects/12)
+- [Zadanie 1 - Poprawa jakosci kodu](#notatki---zadanie-1-poprawa-jakosci-kodu) | [Tablica projektu](https://github.com/users/piotradamczyk78/projects/9)
+- [Zadanie 2 - Import zdjec z PhoenixApi](#notatki---zadanie-2-import-zdjec-z-phoenixapi) | [Tablica projektu](https://github.com/users/piotradamczyk78/projects/10)
+- [Zadanie 3 - Filtrowanie zdjec na stronie glownej](#notatki---zadanie-3-filtrowanie-zdjec-na-stronie-glownej) | [Tablica projektu](https://github.com/users/piotradamczyk78/projects/11)
+- [Zadanie 4 - Rate-limiting w PhoenixApi (OTP)](#notatki---zadanie-4-rate-limiting-w-phoenixapi-otp) | [Tablica projektu](https://github.com/users/piotradamczyk78/projects/12)
 
 ---
 
 # Notatki - Zadanie 1: Poprawa jakosci kodu
 
-[Projekt na GitHub](https://github.com/users/piotradamczyk78/projects/9)
+[Tablica projektu](https://github.com/users/piotradamczyk78/projects/9)
 
 ## Podejscie do pracy
 
@@ -127,7 +127,7 @@ i jakosci, delegujac powtarzalna robote.
 
 # Notatki - Zadanie 2: Import zdjec z PhoenixApi
 
-[Projekt na GitHub](https://github.com/users/piotradamczyk78/projects/10)
+[Tablica projektu](https://github.com/users/piotradamczyk78/projects/10)
 
 ## Podejscie do pracy
 
