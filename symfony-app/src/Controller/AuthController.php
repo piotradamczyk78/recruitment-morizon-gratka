@@ -12,9 +12,12 @@ use Symfony\Component\Routing\Annotation\Route;
 
 class AuthController extends AbstractController
 {
-    #[Route('/auth/{username}/{token}', name: 'auth_login')]
-    public function login(string $username, string $token, Connection $connection, Request $request): Response
+    #[Route('/auth/login', name: 'auth_login', methods: ['POST'])]
+    public function login(Connection $connection, Request $request): Response
     {
+        $token = $request->request->get('token', '');
+        $username = $request->request->get('username', '');
+
         $sql = "SELECT * FROM auth_tokens WHERE token = ?";
         $result = $connection->executeQuery($sql, [$token]);
         $tokenData = $result->fetchAssociative();
