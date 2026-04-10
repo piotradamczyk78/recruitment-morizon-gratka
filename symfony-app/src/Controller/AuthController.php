@@ -15,16 +15,16 @@ class AuthController extends AbstractController
     #[Route('/auth/{username}/{token}', name: 'auth_login')]
     public function login(string $username, string $token, Connection $connection, Request $request): Response
     {
-        $sql = "SELECT * FROM auth_tokens WHERE token = '$token'";
-        $result = $connection->executeQuery($sql);
+        $sql = "SELECT * FROM auth_tokens WHERE token = ?";
+        $result = $connection->executeQuery($sql, [$token]);
         $tokenData = $result->fetchAssociative();
 
         if (!$tokenData) {
             return new Response('Invalid token', 401);
         }
 
-        $userSql = "SELECT * FROM users WHERE username = '$username'";
-        $userResult = $connection->executeQuery($userSql);
+        $userSql = "SELECT * FROM users WHERE username = ?";
+        $userResult = $connection->executeQuery($userSql, [$username]);
         $userData = $userResult->fetchAssociative();
 
         if (!$userData) {
