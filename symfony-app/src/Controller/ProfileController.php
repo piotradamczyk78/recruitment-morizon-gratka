@@ -34,4 +34,34 @@ class ProfileController extends AbstractController
             'user' => $user,
         ]);
     }
+
+    #[Route('/profile/phoenix-token', name: 'profile_phoenix_token', methods: ['POST'])]
+    public function savePhoenixToken(Request $request, EntityManagerInterface $em): Response
+    {
+        $session = $request->getSession();
+        $userId = $session->get('user_id');
+
+        if (!$userId) {
+            return $this->redirectToRoute('home');
+        }
+
+        if (!$this->isCsrfTokenValid('phoenix-token', $request->request->get('_token'))) {
+            $this->addFlash('error', 'Invalid CSRF token.');
+            return $this->redirectToRoute('profile');
+        }
+
+        $user = $em->getRepository(User::class)->find($userId);
+
+        if (!$user) {
+            $session->clear();
+            return $this->redirectToRoute('home');
+        }
+
+        $token = $request->request->get('phoenix_api_token', '');
+        $user->setPhoenixApiToken($token !== '' ? $token : null);
+        $em->flush();
+
+        $this->addFlash('success', 'Phoenix API token saved.');
+        return $this->redirectToRoute('profile');
+    }
 }
