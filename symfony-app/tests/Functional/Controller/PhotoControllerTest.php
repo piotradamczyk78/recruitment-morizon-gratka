@@ -46,7 +46,7 @@ class PhotoControllerTest extends WebTestCase
         $liker = $this->createUserWithToken('liker', 'liker_token');
 
         // Login
-        $this->client->request('GET', '/auth/liker/liker_token');
+        $this->client->request('POST', '/auth/login', ['username' => 'liker', 'token' => 'liker_token']);
         $this->client->followRedirect();
 
         // Like the photo
@@ -66,7 +66,7 @@ class PhotoControllerTest extends WebTestCase
         $liker = $this->createUserWithToken('liker', 'liker_token');
 
         // Login
-        $this->client->request('GET', '/auth/liker/liker_token');
+        $this->client->request('POST', '/auth/login', ['username' => 'liker', 'token' => 'liker_token']);
         $this->client->followRedirect();
 
         // Like
@@ -88,7 +88,7 @@ class PhotoControllerTest extends WebTestCase
         $liker = $this->createUserWithToken('liker', 'liker_token');
 
         // Login
-        $this->client->request('GET', '/auth/liker/liker_token');
+        $this->client->request('POST', '/auth/login', ['username' => 'liker', 'token' => 'liker_token']);
         $this->client->followRedirect();
 
         $this->client->request('GET', '/photo/99999/like');
@@ -105,7 +105,7 @@ class PhotoControllerTest extends WebTestCase
         $photo = $this->createPhoto($owner, 'GET like photo');
         $liker = $this->createUserWithToken('liker', 'liker_token');
 
-        $this->client->request('GET', '/auth/liker/liker_token');
+        $this->client->request('POST', '/auth/login', ['username' => 'liker', 'token' => 'liker_token']);
         $this->client->followRedirect();
 
         // GET request to like - should require POST but works with GET (bug #8)

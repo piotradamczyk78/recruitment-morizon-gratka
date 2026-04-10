@@ -39,7 +39,7 @@ class ProfileControllerTest extends WebTestCase
         $user = $this->createUserWithToken('profileuser', 'profile_token');
 
         // Login
-        $this->client->request('GET', '/auth/profileuser/profile_token');
+        $this->client->request('POST', '/auth/login', ['username' => 'profileuser', 'token' => 'profile_token']);
         $this->client->followRedirect();
 
         $this->client->request('GET', '/profile');
@@ -52,7 +52,7 @@ class ProfileControllerTest extends WebTestCase
         $user = $this->createUserWithToken('tempuser', 'temp_token');
 
         // Login
-        $this->client->request('GET', '/auth/tempuser/temp_token');
+        $this->client->request('POST', '/auth/login', ['username' => 'tempuser', 'token' => 'temp_token']);
         $this->client->followRedirect();
 
         // Delete user from database while session is active
