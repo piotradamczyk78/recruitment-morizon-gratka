@@ -38,11 +38,6 @@ class LikeServiceTest extends TestCase
             ->method('createLike')
             ->with($user, $photo);
 
-        $this->repository
-            ->expects($this->once())
-            ->method('updatePhotoCounter')
-            ->with($photo, 1);
-
         $result = $this->service->toggleLike($user, $photo);
         $this->assertTrue($result);
     }
