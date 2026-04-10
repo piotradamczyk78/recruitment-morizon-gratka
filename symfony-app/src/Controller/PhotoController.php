@@ -37,6 +37,13 @@ class PhotoController extends AbstractController
         }
 
         $user = $em->getRepository(User::class)->find($userId);
+
+        if (!$user) {
+            $session->remove('user_id');
+            $this->addFlash('error', 'User session expired. Please log in again.');
+            return $this->redirectToRoute('home');
+        }
+
         $photo = $em->getRepository(Photo::class)->find($id);
 
         $likeRepository->setUser($user);
