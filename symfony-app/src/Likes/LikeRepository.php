@@ -43,10 +43,11 @@ final class LikeRepository extends ServiceEntityRepository implements LikeReposi
             $em->remove($like);
             $em->flush();
 
-            $photo->setLikeCounter($photo->getLikeCounter() - 1);
-            $em->persist($photo);
-
-            $em->flush();
+            $em->getConnection()->executeStatement(
+                'UPDATE photos SET like_counter = like_counter - 1 WHERE id = ?',
+                [$photo->getId()]
+            );
+            $em->refresh($photo);
         }
     }
 
@@ -83,8 +84,10 @@ final class LikeRepository extends ServiceEntityRepository implements LikeReposi
     public function updatePhotoCounter(Photo $photo, int $increment): void
     {
         $em = $this->getEntityManager();
-        $photo->setLikeCounter($photo->getLikeCounter() + $increment);
-        $em->persist($photo);
-        $em->flush();
+        $em->getConnection()->executeStatement(
+            'UPDATE photos SET like_counter = like_counter + ? WHERE id = ?',
+            [$increment, $photo->getId()]
+        );
+        $em->refresh($photo);
     }
 }
