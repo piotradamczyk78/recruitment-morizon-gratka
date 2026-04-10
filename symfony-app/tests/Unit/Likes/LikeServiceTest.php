@@ -41,11 +41,9 @@ class LikeServiceTest extends TestCase
     }
 
     /**
-     * Bug #14: catch-all Throwable wraps any exception into a generic Exception
-     * with a hardcoded message, losing the original type and context.
-     * Documents current (buggy) behavior.
+     * Fix #14: Exceptions from createLike propagate with original type and message.
      */
-    public function testExecuteWrapsCreateLikeExceptionInGenericException(): void
+    public function testExecutePropagatesCreateLikeException(): void
     {
         $user = new User();
         $photo = new Photo();
@@ -54,16 +52,16 @@ class LikeServiceTest extends TestCase
             ->method('createLike')
             ->willThrowException(new \RuntimeException('Database connection lost'));
 
-        $this->expectException(\Exception::class);
-        $this->expectExceptionMessage('Something went wrong while liking the photo');
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('Database connection lost');
 
         $this->service->execute($user, $photo);
     }
 
     /**
-     * Bug #14: Even a TypeError gets wrapped into a generic Exception.
+     * Fix #14: Exceptions from updatePhotoCounter propagate with original type.
      */
-    public function testExecuteWrapsCounterExceptionInGenericException(): void
+    public function testExecutePropagatesCounterException(): void
     {
         $user = new User();
         $photo = new Photo();
@@ -78,31 +76,9 @@ class LikeServiceTest extends TestCase
             ->method('updatePhotoCounter')
             ->willThrowException(new \TypeError('Type mismatch'));
 
-        $this->expectException(\Exception::class);
-        $this->expectExceptionMessage('Something went wrong while liking the photo');
+        $this->expectException(\TypeError::class);
+        $this->expectExceptionMessage('Type mismatch');
 
         $this->service->execute($user, $photo);
-    }
-
-    /**
-     * Bug #14: Original exception message is lost - replaced with generic message.
-     */
-    public function testExecuteLosesOriginalExceptionMessage(): void
-    {
-        $user = new User();
-        $photo = new Photo();
-        $originalMessage = 'Unique constraint violation on likes table';
-
-        $this->repository
-            ->method('createLike')
-            ->willThrowException(new \RuntimeException($originalMessage));
-
-        try {
-            $this->service->execute($user, $photo);
-            $this->fail('Expected exception was not thrown');
-        } catch (\Exception $e) {
-            $this->assertNotSame($originalMessage, $e->getMessage());
-            $this->assertSame('Something went wrong while liking the photo', $e->getMessage());
-        }
     }
 }
