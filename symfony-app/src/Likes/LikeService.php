@@ -13,9 +13,18 @@ class LikeService
         private LikeRepositoryInterface $likeRepository
     ) {}
 
-    public function execute(User $user, Photo $photo): void
+    /**
+     * @return bool true if liked, false if unliked
+     */
+    public function toggleLike(User $user, Photo $photo): bool
     {
+        if ($this->likeRepository->hasUserLikedPhoto($user, $photo)) {
+            $this->likeRepository->unlikePhoto($user, $photo);
+            return false;
+        }
+
         $this->likeRepository->createLike($user, $photo);
         $this->likeRepository->updatePhotoCounter($photo, 1);
+        return true;
     }
 }

@@ -6,7 +6,6 @@ namespace App\Controller;
 
 use App\Entity\Photo;
 use App\Entity\User;
-use App\Likes\LikeRepositoryInterface;
 use App\Likes\LikeService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -17,7 +16,6 @@ use Symfony\Component\Routing\Annotation\Route;
 class PhotoController extends AbstractController
 {
     public function __construct(
-        private LikeRepositoryInterface $likeRepository,
         private LikeService $likeService,
     ) {}
 
@@ -51,13 +49,8 @@ class PhotoController extends AbstractController
             throw $this->createNotFoundException('Photo not found');
         }
 
-        if ($this->likeRepository->hasUserLikedPhoto($user, $photo)) {
-            $this->likeRepository->unlikePhoto($user, $photo);
-            $this->addFlash('info', 'Photo unliked!');
-        } else {
-            $this->likeService->execute($user, $photo);
-            $this->addFlash('success', 'Photo liked!');
-        }
+        $liked = $this->likeService->toggleLike($user, $photo);
+        $this->addFlash($liked ? 'success' : 'info', $liked ? 'Photo liked!' : 'Photo unliked!');
 
         return $this->redirectToRoute('home');
     }
