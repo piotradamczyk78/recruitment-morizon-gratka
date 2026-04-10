@@ -15,11 +15,7 @@ class LikeService
 
     public function execute(User $user, Photo $photo): void
     {
-        try {
-            $this->likeRepository->createLike($user, $photo);
-            $this->likeRepository->updatePhotoCounter($photo, 1);
-        } catch (\Throwable $e) {
-            throw new \Exception('Something went wrong while liking the photo');
-        }
+        $this->likeRepository->createLike($user, $photo);
+        $this->likeRepository->updatePhotoCounter($photo, 1);
     }
 }
