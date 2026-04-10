@@ -6,10 +6,9 @@ namespace App\Controller;
 
 use App\Entity\Photo;
 use App\Entity\User;
-use App\Likes\LikeRepository;
+use App\Likes\LikeRepositoryInterface;
 use App\Likes\LikeService;
 use Doctrine\ORM\EntityManagerInterface;
-use Doctrine\Persistence\ManagerRegistry;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -17,16 +16,18 @@ use Symfony\Component\Routing\Annotation\Route;
 
 class PhotoController extends AbstractController
 {
+    public function __construct(
+        private LikeRepositoryInterface $likeRepository,
+        private LikeService $likeService,
+    ) {}
+
     #[Route('/photo/{id}/like', name: 'photo_like', methods: ['POST'])]
-    public function like($id, Request $request, EntityManagerInterface $em, ManagerRegistry $managerRegistry): Response
+    public function like($id, Request $request, EntityManagerInterface $em): Response
     {
         if (!$this->isCsrfTokenValid('like-photo-' . $id, $request->request->get('_token'))) {
             $this->addFlash('error', 'Invalid CSRF token.');
             return $this->redirectToRoute('home');
         }
-
-        $likeRepository = new LikeRepository($managerRegistry);
-        $likeService = new LikeService($likeRepository);
 
         $session = $request->getSession();
         $userId = $session->get('user_id');
@@ -50,11 +51,11 @@ class PhotoController extends AbstractController
             throw $this->createNotFoundException('Photo not found');
         }
 
-        if ($likeRepository->hasUserLikedPhoto($user, $photo)) {
-            $likeRepository->unlikePhoto($user, $photo);
+        if ($this->likeRepository->hasUserLikedPhoto($user, $photo)) {
+            $this->likeRepository->unlikePhoto($user, $photo);
             $this->addFlash('info', 'Photo unliked!');
         } else {
-            $likeService->execute($user, $photo);
+            $this->likeService->execute($user, $photo);
             $this->addFlash('success', 'Photo liked!');
         }
 
