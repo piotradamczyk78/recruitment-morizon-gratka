@@ -40,13 +40,15 @@ final class LikeRepository extends ServiceEntityRepository implements LikeReposi
             ->getOneOrNullResult();
 
         if ($like) {
-            $em->remove($like);
-            $em->flush();
+            $em->wrapInTransaction(function () use ($em, $like, $photo): void {
+                $em->remove($like);
+                $em->flush();
 
-            $em->getConnection()->executeStatement(
-                'UPDATE photos SET like_counter = like_counter - 1 WHERE id = ?',
-                [$photo->getId()]
-            );
+                $em->getConnection()->executeStatement(
+                    'UPDATE photos SET like_counter = like_counter - 1 WHERE id = ?',
+                    [$photo->getId()]
+                );
+            });
             $em->refresh($photo);
         }
     }
