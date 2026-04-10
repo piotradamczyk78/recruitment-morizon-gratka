@@ -34,7 +34,9 @@ class PhotoControllerTest extends WebTestCase
         $user = $this->createUser('owner');
         $photo = $this->createPhoto($user, 'Test photo');
 
-        $this->client->request('GET', '/photo/' . $photo->getId() . '/like');
+        $this->client->request('POST', '/photo/' . $photo->getId() . '/like', [
+            '_token' => 'dummy',
+        ]);
 
         $this->assertResponseRedirects('/');
     }
@@ -45,15 +47,14 @@ class PhotoControllerTest extends WebTestCase
         $photo = $this->createPhoto($owner, 'Likeable photo');
         $liker = $this->createUserWithToken('liker', 'liker_token');
 
-        // Login
-        $this->client->request('POST', '/auth/login', ['username' => 'liker', 'token' => 'liker_token']);
-        $this->client->followRedirect();
+        $this->login('liker', 'liker_token');
 
-        // Like the photo
-        $this->client->request('GET', '/photo/' . $photo->getId() . '/like');
+        $csrfToken = $this->getCsrfTokenFromHomePage($photo->getId());
+        $this->client->request('POST', '/photo/' . $photo->getId() . '/like', [
+            '_token' => $csrfToken,
+        ]);
         $this->assertResponseRedirects('/');
 
-        // Verify counter incremented
         $this->em->clear();
         $updatedPhoto = $this->em->getRepository(Photo::class)->find($photo->getId());
         $this->assertSame(1, $updatedPhoto->getLikeCounter());
@@ -65,52 +66,93 @@ class PhotoControllerTest extends WebTestCase
         $photo = $this->createPhoto($owner, 'Toggle photo');
         $liker = $this->createUserWithToken('liker', 'liker_token');
 
-        // Login
-        $this->client->request('POST', '/auth/login', ['username' => 'liker', 'token' => 'liker_token']);
-        $this->client->followRedirect();
+        $this->login('liker', 'liker_token');
 
         // Like
-        $this->client->request('GET', '/photo/' . $photo->getId() . '/like');
+        $csrfToken = $this->getCsrfTokenFromHomePage($photo->getId());
+        $this->client->request('POST', '/photo/' . $photo->getId() . '/like', [
+            '_token' => $csrfToken,
+        ]);
         $this->client->followRedirect();
 
         // Unlike
-        $this->client->request('GET', '/photo/' . $photo->getId() . '/like');
+        $csrfToken = $this->getCsrfTokenFromHomePage($photo->getId());
+        $this->client->request('POST', '/photo/' . $photo->getId() . '/like', [
+            '_token' => $csrfToken,
+        ]);
         $this->assertResponseRedirects('/');
 
-        // Verify counter back to 0
         $this->em->clear();
         $updatedPhoto = $this->em->getRepository(Photo::class)->find($photo->getId());
         $this->assertSame(0, $updatedPhoto->getLikeCounter());
     }
 
-    public function testLikeNonExistentPhotoReturns404(): void
+    public function testLikeNonExistentPhotoReturnsNotFound(): void
     {
+        $owner = $this->createUser('owner');
+        $photo = $this->createPhoto($owner, 'Real photo');
         $liker = $this->createUserWithToken('liker', 'liker_token');
 
-        // Login
-        $this->client->request('POST', '/auth/login', ['username' => 'liker', 'token' => 'liker_token']);
-        $this->client->followRedirect();
+        $this->login('liker', 'liker_token');
 
-        $this->client->request('GET', '/photo/99999/like');
+        // We need a real CSRF token - get it from home page for the real photo,
+        // then delete the photo to simulate "not found" scenario
+        $csrfToken = $this->getCsrfTokenFromHomePage($photo->getId());
+        $photoId = $photo->getId();
+
+        $this->em->getConnection()->executeStatement('DELETE FROM photos WHERE id = ?', [$photoId]);
+
+        $this->client->request('POST', '/photo/' . $photoId . '/like', [
+            '_token' => $csrfToken,
+        ]);
         $this->assertResponseStatusCodeSame(404);
     }
 
-    /**
-     * Bug #8: Like action uses GET method - no CSRF protection.
-     * This test documents that likes work via GET, which is a security issue.
-     */
-    public function testLikeWorksViaGetRequest(): void
+    public function testLikeViaGetMethodIsNotAllowed(): void
     {
         $owner = $this->createUser('owner');
         $photo = $this->createPhoto($owner, 'GET like photo');
         $liker = $this->createUserWithToken('liker', 'liker_token');
 
-        $this->client->request('POST', '/auth/login', ['username' => 'liker', 'token' => 'liker_token']);
-        $this->client->followRedirect();
+        $this->login('liker', 'liker_token');
 
-        // GET request to like - should require POST but works with GET (bug #8)
         $this->client->request('GET', '/photo/' . $photo->getId() . '/like');
+        $this->assertResponseStatusCodeSame(405);
+    }
+
+    public function testLikeWithInvalidCsrfTokenIsRejected(): void
+    {
+        $owner = $this->createUser('owner');
+        $photo = $this->createPhoto($owner, 'CSRF photo');
+        $liker = $this->createUserWithToken('liker', 'liker_token');
+
+        $this->login('liker', 'liker_token');
+
+        $this->client->request('POST', '/photo/' . $photo->getId() . '/like', [
+            '_token' => 'invalid_csrf_token',
+        ]);
         $this->assertResponseRedirects('/');
+
+        $this->em->clear();
+        $updatedPhoto = $this->em->getRepository(Photo::class)->find($photo->getId());
+        $this->assertSame(0, $updatedPhoto->getLikeCounter());
+    }
+
+    private function login(string $username, string $token): void
+    {
+        $this->client->request('POST', '/auth/login', [
+            'username' => $username,
+            'token' => $token,
+        ]);
+        $this->client->followRedirect();
+    }
+
+    private function getCsrfTokenFromHomePage(int $photoId): string
+    {
+        $crawler = $this->client->request('GET', '/');
+        $form = $crawler->filter('form[action$="/photo/' . $photoId . '/like"]');
+
+        return $form->filter('input[name="_token"]')->attr('value');
     }
 
     private function createUser(string $username): User

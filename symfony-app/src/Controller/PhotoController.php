@@ -17,9 +17,14 @@ use Symfony\Component\Routing\Annotation\Route;
 
 class PhotoController extends AbstractController
 {
-    #[Route('/photo/{id}/like', name: 'photo_like')]
+    #[Route('/photo/{id}/like', name: 'photo_like', methods: ['POST'])]
     public function like($id, Request $request, EntityManagerInterface $em, ManagerRegistry $managerRegistry): Response
     {
+        if (!$this->isCsrfTokenValid('like-photo-' . $id, $request->request->get('_token'))) {
+            $this->addFlash('error', 'Invalid CSRF token.');
+            return $this->redirectToRoute('home');
+        }
+
         $likeRepository = new LikeRepository($managerRegistry);
         $likeService = new LikeService($likeRepository);
 
