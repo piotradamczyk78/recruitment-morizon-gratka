@@ -109,3 +109,75 @@ Calosc pracy jest przejrzysta w historii gitowej - kazdy commit, PR i komentarz
 w review sa widoczne. Uwazam, ze umiejetnosc efektywnej wspolpracy z AI to istotna
 kompetencja wspolczesnego developera - pozwala skupic sie na decyzjach architektonicznych
 i jakosci, delegujac powtarzalna robote.
+
+---
+
+# Notatki - Zadanie 2: Import zdjec z PhoenixApi
+
+## Podejscie do pracy
+
+Funkcjonalnosc rozbilem na 5 atomowych krokow - kazdy w osobnym branchu z PR
+do develop. Kazdy krok od razu zawiera testy pokrywajace brzegowe warunki.
+Calosc sledzona na GitHub Project board ze statusami Todo / In Progress / Done.
+
+## Wprowadzone zmiany
+
+### 1. Migracja - pole phoenix_api_token (PR #65)
+
+Nowa kolumna `phoenix_api_token` (varchar 255, nullable) w tabeli `users`.
+Nullable, bo nie kazdy uzytkownik musi miec skonfigurowana integracje z PhoenixApi.
+Getter/setter w encji User + migracja Doctrine.
+
+### 2. Formularz tokenu w profilu (PR #66)
+
+Endpoint `POST /profile/phoenix-token` z walidacja CSRF. Formularz w szablonie
+profilu - pole tekstowe z przyciskiem Save. Pusty string czysci token na null.
+Flash messages informuja o wyniku.
+
+### 3. Serwis klienta PhoenixApi (PR #67)
+
+`PhoenixApiClient` oparty na Symfony HttpClient. Metoda `fetchPhotos(token)`
+wywoluje `GET /api/photos` z headerem `access-token`. Dedykowany wyjatek
+`InvalidPhoenixTokenException` dla odpowiedzi 401. URL konfigurowalny przez
+env `PHOENIX_BASE_URL` (uzywa istniejacego env z docker-compose).
+
+### 4. Serwis importu zdjec (PR #68)
+
+`PhotoImportService` z logika biznesowa importu. Pobiera zdjecia z PhoenixApi,
+tworzy encje Photo mapujac `photo_url` -> `imageUrl`. Zapobiega duplikatom -
+sprawdza istniejace URL-e usera i deduplikuje w ramach batcha. Zwraca
+statystyki: ile zaimportowano / pominieto. Jeden flush na koniec batcha.
+
+### 5. Przycisk importu w profilu (PR #69)
+
+Endpoint `POST /profile/import-photos` z CSRF protection. Przycisk "Import Photos"
+widoczny w profilu tylko gdy token PhoenixApi jest ustawiony. Obsluga trzech
+scenariuszy bledow: bledny token (401), blad sieci, brak tokenu. Flash messages
+z czytelnym komunikatem.
+
+## Testy
+
+30 nowych testow napisanych inline z kazdym krokiem:
+
+**Testy jednostkowe:**
+- PhoenixApiClientTest (7 testow) - success, empty, 401, 500, header, URL, brak klucza
+- PhotoImportServiceTest (6 testow) - import, duplikaty, pusty response, puste URL, batch dedup
+- UserTest (3 testy) - default null, set/get, clear to null
+
+**Testy funkcjonalne:**
+- ProfileControllerTest - zapis tokenu (5 testow) - guest, CSRF, success, clear, GET 405
+- ProfileControllerTest - import (9 testow) - guest, CSRF, brak tokenu, success, invalid token,
+  blad sieci, GET 405, widocznosc przycisku
+
+Lacznie po Zadaniu 2: **81 testow, 155 asercji**.
+
+## Decyzje architektoniczne
+
+- **PHOENIX_BASE_URL zamiast PHOENIX_API_URL** - uzylem istniejacego env z docker-compose
+  zamiast tworzenia nowego, zeby uniknac duplikacji konfiguracji
+- **Deduplikacja na poziomie URL** - porownuje imageUrl per user, nie Phoenix photo ID,
+  bo ID z PhoenixApi nie jest przechowywane w encji Photo
+- **Jeden flush na batch** - zamiast flush per zdjecie, jeden flush po calym imporcie
+  dla wydajnosci
+- **Mock przez disableReboot()** - w testach funkcjonalnych uzycie `$client->disableReboot()`
+  zeby mock PhotoImportService przetrwal miedzy requestami w ramach jednego testu
