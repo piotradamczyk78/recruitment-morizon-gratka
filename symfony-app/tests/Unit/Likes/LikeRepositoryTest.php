@@ -4,12 +4,10 @@ declare(strict_types=1);
 
 namespace App\Tests\Unit\Likes;
 
-use App\Entity\User;
 use App\Likes\LikeRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Mapping\ClassMetadata;
 use Doctrine\Persistence\ManagerRegistry;
-use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
 class LikeRepositoryTest extends TestCase
@@ -33,62 +31,24 @@ class LikeRepositoryTest extends TestCase
     }
 
     /**
-     * Bug #12: setUser() on a singleton - stateful repository.
-     * Documents current (buggy) behavior where the user is stored
-     * as instance state on a shared service. In Symfony, repositories
-     * are singletons, so this state leaks between requests/callers.
+     * Fix #12: Repository no longer stores user as instance state.
+     * User is passed as a parameter to each method, making it stateless.
      */
-    public function testSetUserStoresUserAsInstanceState(): void
+    public function testRepositoryHasNoUserProperty(): void
     {
-        $user1 = new User();
-        $this->repository->setUser($user1);
-
-        $user2 = new User();
-        $this->repository->setUser($user2);
-
         $reflection = new \ReflectionClass($this->repository);
-        $property = $reflection->getProperty('user');
-        $property->setAccessible(true);
 
-        $this->assertSame($user2, $property->getValue($this->repository));
+        $this->assertFalse(
+            $reflection->hasProperty('user'),
+            'LikeRepository should not have a user property - user should be passed as method parameter'
+        );
     }
 
-    public function testSetUserAcceptsNull(): void
+    public function testRepositoryHasNoSetUserMethod(): void
     {
-        $user = new User();
-        $this->repository->setUser($user);
-        $this->repository->setUser(null);
-
-        $reflection = new \ReflectionClass($this->repository);
-        $property = $reflection->getProperty('user');
-        $property->setAccessible(true);
-
-        $this->assertNull($property->getValue($this->repository));
-    }
-
-    /**
-     * Bug #12: Demonstrates that the state persists across multiple
-     * setUser() calls - if repository is a singleton, user A's state
-     * could leak into user B's request.
-     */
-    public function testStatefulRepositoryRetainsUserBetweenCalls(): void
-    {
-        $userA = new User();
-        $userB = new User();
-
-        $reflection = new \ReflectionClass($this->repository);
-        $property = $reflection->getProperty('user');
-        $property->setAccessible(true);
-
-        $this->repository->setUser($userA);
-        $this->assertSame($userA, $property->getValue($this->repository));
-
-        // Without explicit reset, userA is still stored
-        $this->assertSame($userA, $property->getValue($this->repository));
-
-        $this->repository->setUser($userB);
-        // userA is gone, userB took its place
-        $this->assertNotSame($userA, $property->getValue($this->repository));
-        $this->assertSame($userB, $property->getValue($this->repository));
+        $this->assertFalse(
+            method_exists($this->repository, 'setUser'),
+            'LikeRepository should not have setUser() - user should be passed as method parameter'
+        );
     }
 }

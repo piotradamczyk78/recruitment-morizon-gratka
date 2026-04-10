@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Unit\Likes;
 
 use App\Entity\Photo;
+use App\Entity\User;
 use App\Likes\LikeRepositoryInterface;
 use App\Likes\LikeService;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -23,19 +24,20 @@ class LikeServiceTest extends TestCase
 
     public function testExecuteCreatesLikeAndUpdatesCounter(): void
     {
+        $user = new User();
         $photo = new Photo();
 
         $this->repository
             ->expects($this->once())
             ->method('createLike')
-            ->with($photo);
+            ->with($user, $photo);
 
         $this->repository
             ->expects($this->once())
             ->method('updatePhotoCounter')
             ->with($photo, 1);
 
-        $this->service->execute($photo);
+        $this->service->execute($user, $photo);
     }
 
     /**
@@ -45,6 +47,7 @@ class LikeServiceTest extends TestCase
      */
     public function testExecuteWrapsCreateLikeExceptionInGenericException(): void
     {
+        $user = new User();
         $photo = new Photo();
 
         $this->repository
@@ -54,7 +57,7 @@ class LikeServiceTest extends TestCase
         $this->expectException(\Exception::class);
         $this->expectExceptionMessage('Something went wrong while liking the photo');
 
-        $this->service->execute($photo);
+        $this->service->execute($user, $photo);
     }
 
     /**
@@ -62,6 +65,7 @@ class LikeServiceTest extends TestCase
      */
     public function testExecuteWrapsCounterExceptionInGenericException(): void
     {
+        $user = new User();
         $photo = new Photo();
 
         $like = $this->createMock(\App\Likes\Like::class);
@@ -77,7 +81,7 @@ class LikeServiceTest extends TestCase
         $this->expectException(\Exception::class);
         $this->expectExceptionMessage('Something went wrong while liking the photo');
 
-        $this->service->execute($photo);
+        $this->service->execute($user, $photo);
     }
 
     /**
@@ -85,6 +89,7 @@ class LikeServiceTest extends TestCase
      */
     public function testExecuteLosesOriginalExceptionMessage(): void
     {
+        $user = new User();
         $photo = new Photo();
         $originalMessage = 'Unique constraint violation on likes table';
 
@@ -93,7 +98,7 @@ class LikeServiceTest extends TestCase
             ->willThrowException(new \RuntimeException($originalMessage));
 
         try {
-            $this->service->execute($photo);
+            $this->service->execute($user, $photo);
             $this->fail('Expected exception was not thrown');
         } catch (\Exception $e) {
             $this->assertNotSame($originalMessage, $e->getMessage());
