@@ -171,6 +171,28 @@
             background: #d35400;
         }
 
+        .import-photos-form {
+            margin-top: 12px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .import-photos-btn {
+            padding: 10px 20px;
+            background: #27ae60;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .import-photos-btn:hover {
+            background: #219a52;
+        }
+
         .profile-stats {
             display: flex;
             justify-content: center;
@@ -261,6 +283,16 @@
                 <button type="submit" class="phoenix-token-btn">Save Token</button>
             </form>
         </div>
+
+        {% if user.phoenixApiToken %}
+            <div class="phoenix-token-section" style="border-left-color: #27ae60; margin-top: 15px;">
+                <div class="phoenix-token-label" style="color: #27ae60;">Import Photos from Phoenix</div>
+                <form method="post" action="{{ path('profile_import_photos') }}" class="import-photos-form">
+                    <input type="hidden" name="_token" value="{{ csrf_token('import-photos') }}">
+                    <button type="submit" class="import-photos-btn">Import Photos</button>
+                </form>
+            </div>
+        {% endif %}
 
         <div class="profile-stats">
             <div class="stat-item">
