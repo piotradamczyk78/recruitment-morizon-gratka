@@ -31,6 +31,11 @@ class PhoenixApiClient
             throw new InvalidPhoenixTokenException();
         }
 
+        if ($statusCode === 429) {
+            $retryAfter = (int) ($response->getHeaders(false)['retry-after'][0] ?? 60);
+            throw new RateLimitExceededException($retryAfter);
+        }
+
         if ($statusCode !== 200) {
             throw new \RuntimeException('Phoenix API error: HTTP ' . $statusCode);
         }
