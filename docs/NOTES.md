@@ -196,3 +196,64 @@ Lacznie po Zadaniu 2: **81 testow, 155 asercji**.
   dla wydajnosci
 - **Mock przez disableReboot()** - w testach funkcjonalnych uzycie `$client->disableReboot()`
   zeby mock PhotoImportService przetrwal miedzy requestami w ramach jednego testu
+
+---
+
+# Notatki - Zadanie 3: Filtrowanie zdjec na stronie glownej
+
+[Tablica projektu](https://github.com/users/piotradamczyk78/projects/11)
+
+## Podejscie do pracy
+
+Funkcjonalnosc rozbilem na 4 atomowe kroki - kazdy w osobnym branchu z PR
+do develop. Calosc sledzona na GitHub Project board.
+
+## Wprowadzone zmiany
+
+### 1. Metoda filtrowania w PhotoRepository (PR #71)
+
+Nowa metoda `findByFilters(array $filters)` dynamicznie budujaca QueryBuilder.
+Filtry LIKE dla tekstowych pol (location, camera, description, username)
+i zakres dat dla `takenAt` (date_from / date_to). Eager-loading userow
+przez LEFT JOIN. Gdy brak filtrow - zwraca wszystkie zdjecia.
+
+### 2. Formularz filtrow w szablonie galerii (PR #72)
+
+Formularz GET z 6 polami umieszczony nad siatka zdjec. Pola: location, camera,
+description, username, date_from, date_to. Przycisk "Filter" + link "Clear"
+(prosty href do strony glownej bez parametrow). Filtry w URL - bookmarkowalne
+i udostepnialne.
+
+### 3. Obsluga filtrow w HomeController (PR #73)
+
+Odczyt parametrow z query string w `HomeController::index()`. Warunkowe
+przekazanie do `findByFilters()` gdy filtry niepuste, w przeciwnym razie
+`findAllWithUsers()`. Aktualne filtry przekazywane do szablonu - formularz
+zachowuje wartosci pol po submicie.
+
+### 4. Testy (PR #74)
+
+19 nowych testow:
+
+**PhotoRepositoryFilterTest** (10 testow, KernelTestCase):
+- kazdy filtr osobno (location, camera, description, username, date_from, date_to)
+- zakres dat, kombinacja filtrow, puste filtry, brak wynikow
+
+**HomeControllerTest** (9 nowych testow, WebTestCase):
+- filtrowanie end-to-end po kazdym polu
+- kombinacja filtrow, brak wynikow (empty state), zachowanie wartosci formularza
+
+Lacznie po Zadaniu 3: **100 testow, 214 asercji**.
+
+## Decyzje architektoniczne
+
+- **GET zamiast POST** - filtry w query string sa bookmarkowalne i mozna je
+  udostepniac jako link. Nie modyfikuja stanu serwera
+- **LIKE z wildcardami** - czesciowe dopasowanie (`%value%`) pozwala na wygodne
+  wyszukiwanie bez znajomosci pelnej nazwy
+- **Optymalizacja bez filtrow** - gdy brak filtrow uzywam prostszego
+  `findAllWithUsers()` zamiast `findByFilters()` z pustymi parametrami
+- **date_to z 23:59:59** - doliczenie czasu do konca dnia, zeby wlaczac
+  zdjecia z calego dnia koncowego zakresu
+- **Testy repozytorium jako KernelTestCase** - repozytorium Doctrine wymaga
+  prawdziwego EntityManagera, ale nie potrzebuje HTTP clienta
