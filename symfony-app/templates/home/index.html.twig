@@ -149,10 +149,132 @@
             font-size: 2em;
             margin-bottom: 10px;
         }
+
+        .filter-section {
+            max-width: 1200px;
+            margin: 0 auto 30px;
+            background: white;
+            border-radius: 12px;
+            padding: 25px 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+        }
+
+        .filter-title {
+            font-size: 1.1em;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 15px;
+        }
+
+        .filter-form {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            align-items: flex-end;
+        }
+
+        .filter-field {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .filter-field label {
+            font-size: 0.8em;
+            color: #667eea;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+
+        .filter-field input {
+            padding: 8px 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 0.9em;
+            transition: border-color 0.2s;
+            width: 160px;
+        }
+
+        .filter-field input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .filter-buttons {
+            display: flex;
+            gap: 8px;
+            align-items: flex-end;
+        }
+
+        .filter-btn {
+            padding: 8px 20px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: background 0.2s;
+        }
+
+        .filter-btn-submit {
+            background: #667eea;
+            color: white;
+        }
+
+        .filter-btn-submit:hover {
+            background: #5a6fd6;
+        }
+
+        .filter-btn-clear {
+            background: #e0e0e0;
+            color: #555;
+            text-decoration: none;
+            display: inline-block;
+            line-height: 1.4;
+        }
+
+        .filter-btn-clear:hover {
+            background: #d0d0d0;
+        }
     </style>
 {% endblock %}
 
 {% block body %}
+    <div class="filter-section">
+        <div class="filter-title">Filter Photos</div>
+        <form method="get" action="{{ path('home') }}" class="filter-form">
+            <div class="filter-field">
+                <label for="filter-location">Location</label>
+                <input type="text" id="filter-location" name="location" value="{{ filters.location|default('') }}" placeholder="e.g. Rocky Mountains">
+            </div>
+            <div class="filter-field">
+                <label for="filter-camera">Camera</label>
+                <input type="text" id="filter-camera" name="camera" value="{{ filters.camera|default('') }}" placeholder="e.g. Canon">
+            </div>
+            <div class="filter-field">
+                <label for="filter-description">Description</label>
+                <input type="text" id="filter-description" name="description" value="{{ filters.description|default('') }}" placeholder="e.g. sunset">
+            </div>
+            <div class="filter-field">
+                <label for="filter-username">Username</label>
+                <input type="text" id="filter-username" name="username" value="{{ filters.username|default('') }}" placeholder="e.g. john">
+            </div>
+            <div class="filter-field">
+                <label for="filter-date-from">Date from</label>
+                <input type="date" id="filter-date-from" name="date_from" value="{{ filters.date_from|default('') }}">
+            </div>
+            <div class="filter-field">
+                <label for="filter-date-to">Date to</label>
+                <input type="date" id="filter-date-to" name="date_to" value="{{ filters.date_to|default('') }}">
+            </div>
+            <div class="filter-buttons">
+                <button type="submit" class="filter-btn filter-btn-submit">Filter</button>
+                <a href="{{ path('home') }}" class="filter-btn filter-btn-clear">Clear</a>
+            </div>
+        </form>
+    </div>
+
     {% if photos|length > 0 %}
         <div class="photo-grid">
             {% for photo in photos %}
