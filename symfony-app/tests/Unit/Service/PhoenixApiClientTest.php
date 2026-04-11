@@ -6,6 +6,7 @@ namespace App\Tests\Unit\Service;
 
 use App\Service\InvalidPhoenixTokenException;
 use App\Service\PhoenixApiClient;
+use App\Service\RateLimitExceededException;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpClient\MockHttpClient;
 use Symfony\Component\HttpClient\Response\MockResponse;
@@ -88,6 +89,37 @@ class PhoenixApiClientTest extends TestCase
         $client->fetchPhotos('token');
 
         $this->assertSame('http://custom-host:9000/api/photos', $mockResponse->getRequestUrl());
+    }
+
+    public function testFetchPhotosThrowsRateLimitExceptionOn429(): void
+    {
+        $mockResponse = new MockResponse('', [
+            'http_code' => 429,
+            'response_headers' => ['retry-after' => '30'],
+        ]);
+        $httpClient = new MockHttpClient($mockResponse);
+        $client = new PhoenixApiClient($httpClient, 'http://phoenix:4000');
+
+        try {
+            $client->fetchPhotos('token');
+            $this->fail('Expected RateLimitExceededException');
+        } catch (RateLimitExceededException $e) {
+            $this->assertSame(30, $e->getRetryAfter());
+        }
+    }
+
+    public function testFetchPhotosRateLimitDefaultsTo60WhenNoHeader(): void
+    {
+        $mockResponse = new MockResponse('', ['http_code' => 429]);
+        $httpClient = new MockHttpClient($mockResponse);
+        $client = new PhoenixApiClient($httpClient, 'http://phoenix:4000');
+
+        try {
+            $client->fetchPhotos('token');
+            $this->fail('Expected RateLimitExceededException');
+        } catch (RateLimitExceededException $e) {
+            $this->assertSame(60, $e->getRetryAfter());
+        }
     }
 
     public function testFetchPhotosHandlesMissingPhotosKey(): void
