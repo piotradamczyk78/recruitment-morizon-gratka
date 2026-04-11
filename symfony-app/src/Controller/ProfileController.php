@@ -7,6 +7,7 @@ namespace App\Controller;
 use App\Entity\User;
 use App\Service\InvalidPhoenixTokenException;
 use App\Service\PhotoImportService;
+use App\Service\RateLimitExceededException;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -101,6 +102,8 @@ class ProfileController extends AbstractController
             $this->addFlash('success', sprintf('Imported %d photos (%d skipped).', $result['imported'], $result['skipped']));
         } catch (InvalidPhoenixTokenException) {
             $this->addFlash('error', 'Invalid Phoenix API token.');
+        } catch (RateLimitExceededException $e) {
+            $this->addFlash('error', sprintf('Too many imports, please try again in %d seconds.', $e->getRetryAfter()));
         } catch (\RuntimeException $e) {
             $this->addFlash('error', 'Failed to connect to Phoenix API.');
         }
