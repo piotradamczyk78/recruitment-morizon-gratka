@@ -257,3 +257,81 @@ Lacznie po Zadaniu 3: **100 testow, 214 asercji**.
   zdjecia z calego dnia koncowego zakresu
 - **Testy repozytorium jako KernelTestCase** - repozytorium Doctrine wymaga
   prawdziwego EntityManagera, ale nie potrzebuje HTTP clienta
+
+---
+
+# Notatki - Zadanie 4: Rate-limiting w PhoenixApi (OTP)
+
+[Tablica projektu](https://github.com/users/piotradamczyk78/projects/12)
+
+## Podejscie do pracy
+
+Funkcjonalnosc rozbilem na 5 atomowych krokow - 3 w Phoenix (Elixir/OTP)
+i 2 w Symfony (PHP). Kazdy w osobnym branchu z PR do develop.
+
+## Wprowadzone zmiany
+
+### 1. RateLimiter GenServer z ETS (PR #76)
+
+`PhoenixApi.RateLimiter` - GenServer startowany w supervision tree.
+ETS tabela z timestampami requestow per key (sliding window).
+API: `check_rate(key, limit, window_ms)` zwraca `:ok` lub
+`{:error, :rate_limited, retry_after_s}`. Periodyczny cleanup
+starych wpisow co 5 minut.
+
+### 2. Plug rate-limitingu (PR #77)
+
+`PhoenixApiWeb.Plugs.RateLimit` sprawdzajacy dwa limity:
+- per-user (access-token): max 5 requestow / 10 min
+- globalny: max 1000 requestow / 1h
+
+Przy przekroczeniu: 429 Too Many Requests z JSON body
+i headerem `Retry-After`.
+
+### 3. Podpiecie do routera Phoenix (PR #78)
+
+Pipeline `:rate_limited` z plugiem RateLimit dolaczony do scope `/api`.
+Rate-limiting sprawdzany przed autentykacja - chroni przed brute-force
+na tokeny.
+
+### 4. Obsluga 429 w Symfony (PR #79)
+
+Dedykowany wyjatek `RateLimitExceededException` z `retryAfter`.
+`PhoenixApiClient` rzuca wyjatek przy odpowiedzi 429, odczytuje
+`Retry-After` z headera. `ProfileController` wyswietla komunikat
+"Too many imports, please try again in X seconds".
+
+### 5. Testy (PR #80)
+
+12 nowych testow:
+
+**RateLimiterTest** (6 testow, ExUnit):
+- w limicie, przekroczenie, niezalezne klucze, reset po wygasnieciu okna,
+  cleanup wpisow, retry_after minimum 1 sekunda
+
+**RateLimitPlugTest** (3 testy, ConnCase):
+- 200 w limicie, 429 po przekroczeniu per-user, niezaleznosc limitow
+
+**PhoenixApiClientTest** (2 nowe testy, PHPUnit):
+- 429 z Retry-After header, domyslny fallback 60s
+
+**ProfileControllerTest** (1 nowy test, WebTestCase):
+- komunikat rate limit z retry_after w UI
+
+Lacznie po Zadaniu 4: Phoenix **15 testow**, Symfony **103 testow, 220 asercji**.
+
+## Decyzje architektoniczne
+
+- **ETS zamiast bazy danych** - szybki dostep do timestampow bez obciazania
+  bazy. Rate-limiting nie wymaga trwalosci - restart serwera resetuje limity
+- **Sliding window** - dokladniejszy niz fixed window, nie dopuszcza
+  podwojnego limitu na granicy okien
+- **GenServer z nazwana instancja** - parametr `name` pozwala na testowanie
+  z izolowanymi instancjami (kazdy test ma wlasny GenServer)
+- **Rate key per access-token** - plug dziala przed autentykacja, wiec
+  nie zna jeszcze user_id. Token jest unikatowy per user
+- **RateLimitExceededException rozszerza RuntimeException** - wymaga
+  uchwycenia PRZED generycznym `catch (\RuntimeException)` w kontrolerze
+- **Restart RateLimiter w testach plug** - globalny singleton wymaga
+  czyszczenia stanu miedzy testami. Supervisor automatycznie restartuje
+  proces po `GenServer.stop()`
