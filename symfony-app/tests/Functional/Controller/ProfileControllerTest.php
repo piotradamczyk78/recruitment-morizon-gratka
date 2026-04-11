@@ -8,6 +8,7 @@ use App\Entity\AuthToken;
 use App\Entity\User;
 use App\Service\InvalidPhoenixTokenException;
 use App\Service\PhotoImportService;
+use App\Service\RateLimitExceededException;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
@@ -260,6 +261,30 @@ class ProfileControllerTest extends WebTestCase
         $this->assertResponseRedirects('/profile');
         $this->client->followRedirect();
         $this->assertSelectorTextContains('body', 'Failed to connect to Phoenix API');
+    }
+
+    public function testImportPhotosRateLimited(): void
+    {
+        $user = $this->createUserWithToken('ratelimituser', 'ratelimit_val');
+        $user->setPhoenixApiToken('some-token');
+        $this->em->flush();
+
+        $this->client->disableReboot();
+        $this->client->request('POST', '/auth/login', ['username' => 'ratelimituser', 'token' => 'ratelimit_val']);
+        $this->client->followRedirect();
+
+        $crawler = $this->client->request('GET', '/profile');
+        $csrfToken = $this->getImportCsrfToken($crawler);
+
+        $mockImportService = $this->createMock(PhotoImportService::class);
+        $mockImportService->method('importPhotos')
+            ->willThrowException(new RateLimitExceededException(45));
+        static::getContainer()->set(PhotoImportService::class, $mockImportService);
+
+        $this->client->request('POST', '/profile/import-photos', ['_token' => $csrfToken]);
+        $this->assertResponseRedirects('/profile');
+        $this->client->followRedirect();
+        $this->assertSelectorTextContains('body', 'Too many imports, please try again in 45 seconds');
     }
 
     public function testImportPhotosViaGetReturns405(): void
